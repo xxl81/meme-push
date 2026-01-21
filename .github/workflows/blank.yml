@@ -1,0 +1,89 @@
+```yaml
+name: 热梗定时推送
+
+on:
+  schedule:
+    # 北京时间 09:00
+    - cron: '0 1 * * *'
+    # 北京时间 15:00
+    - cron: '0 7 * * *'
+    # 北京时间 18:00
+    - cron: '0 10 * * *'
+    # 北京时间 23:59
+    - cron: '59 15 * * *'
+
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 创建推送脚本
+        run: |
+          cat > push_meme.py << 'EOF'
+      import os
+      import sys
+      import json
+      import requests
+      from datetime import datetime
+
+      webhook_url = "${{ secrets.WECHAT_WEBHOOK_URL }}"
+
+      def send_message():
+          today = datetime.now().strftime('%Y年%m月%d日')
+          current_time = datetime.now().strftime('%H:%M')
+
+          message = f"""## 📅 {today} 全网热梗推送 {current_time}
+
+### 🔥 热梗列表
+
+**1. 今日热梗1**
+💬 精选评论：哈哈哈哈太好笑了
+🔗 [查看详情](https://example.com/1) | 📋 复制链接：`https://example.com/1`
+
+---
+
+**2. 今日热梗2**
+💬 精选评论：笑死我了
+🔗 [查看详情](https://example.com/2) | 📋 复制链接：`https://example.com/2`
+
+---
+
+**3. 今日热梗3**
+💬 精选评论：太真实了
+🔗 [查看详情](https://example.com/3) | 📋 复制链接：`https://example.com/3`
+
+---
+
+✨ 以上内容由GitHub Actions自动推送
+      """
+
+          data = {
+              "msgtype": "markdown",
+              "markdown": {"content": message}
+          }
+
+          try:
+              response = requests.post(webhook_url, json=data)
+              if response.json().get('errcode') == 0:
+                  print("✅ 推送成功！")
+              else:
+                  print(f"❌ 推送失败：{response.json()}")
+          except Exception as e:
+              print(f"❌ 推送异常：{e}")
+              sys.exit(1)
+
+      send_message()
+      EOF
+
+      - name: 执行推送
+        run: python push_meme.py

@@ -1,0 +1,141 @@
+name: 热梗定时推送
+
+on:
+  schedule:
+    # 北京时间 09:00（UTC 01:00）
+    - cron: '0 1 * * *'
+    # 北京时间 15:00（UTC 07:00）
+    - cron: '0 7 * * *'
+    # 北京时间 18:00（UTC 10:00）
+    - cron: '0 10 * * *'
+    # 北京时间 23:59（UTC 15:59）
+    - cron: '59 15 * * *'
+
+  workflow_dispatch:
+
+jobs:
+  meme_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 创建推送脚本
+        run: |
+          cat > push_meme.py << 'EOF'
+      import requests
+      import json
+      from datetime import datetime
+
+      webhook_url = "${{ secrets.WECHAT_WEBHOOK_URL }}"
+
+      def send_message():
+          today = datetime.now().strftime('%Y年%m月%d日')
+          current_time = datetime.now().strftime('%H:%M')
+
+          message = f"""## 📅 {today} 全网热梗推送 {current_time}
+
+### 🔥 微博热榜TOP3
+
+**1. 今日热梗1**
+💬 精选评论：哈哈哈哈太好笑了
+🔗 [查看详情](https://weibo.com/1) | 📋 复制链接：`https://weibo.com/1`
+
+---
+
+**2. 今日热梗2**
+💬 精选评论：笑死我了
+🔗 [查看详情](https://weibo.com/2) | 📋 复制链接：`https://weibo.com/2`
+
+---
+
+**3. 今日热梗3**
+💬 精选评论：太真实了
+🔗 [查看详情](https://weibo.com/3) | 📋 复制链接：`https://weibo.com/3`
+
+---
+
+### 🔥 小红书热榜TOP3
+
+**4. 今日热梗4**
+💬 精选评论：绝了
+🔗 [查看详情](https://xiaohongshu.com/1) | 📋 复制链接：`https://xiaohongshu.com/1`
+
+---
+
+**5. 今日热梗5**
+💬 精选评论：家人们谁懂啊
+🔗 [查看详情](https://xiaohongshu.com/2) | 📋 复制链接：`https://xiaohongshu.com/2`
+
+---
+
+**6. 今日热梗6**
+💬 精选评论：破防了
+🔗 [查看详情](https://xiaohongshu.com/3) | 📋 复制链接：`https://xiaohongshu.com/3`
+
+---
+
+### 🔥 B站热榜TOP3
+
+**7. 今日热梗7**
+💬 精选评论：这也能行
+🔗 [查看详情](https://bilibili.com/1) | 📋 复制链接：`https://bilibili.com/1`
+
+---
+
+**8. 今日热梗8**
+💬 精选评论：真香
+🔗 [查看详情](https://bilibili.com/2) | 📋 复制链接：`https://bilibili.com/2`
+
+---
+
+**9. 今日热梗9**
+💬 精选评论：懂了
+🔗 [查看详情](https://bilibili.com/3) | 📋 复制链接：`https://bilibili.com/3`
+
+---
+
+### 🔥 抖音热榜TOP3
+
+**10. 今日热梗10**
+💬 精选评论：太上头了
+🔗 [查看详情](https://douyin.com/1) | 📋 复制链接：`https://douyin.com/1`
+
+---
+
+**11. 今日热梗11**
+💬 精选评论：谁还不是个宝宝
+🔗 [查看详情](https://douyin.com/2) | 📋 复制链接：`https://douyin.com/2`
+
+---
+
+**12. 今日热梗12**
+💬 精选评论：快乐加倍
+🔗 [查看详情](https://douyin.com/3) | 📋 复制链接：`https://douyin.com/3`
+
+---
+
+✨ GitHub Actions自动推送
+      """
+
+          data = {
+              "msgtype": "markdown",
+              "markdown": {"content": message}
+          }
+
+          response = requests.post(webhook_url, json=data)
+          if response.json().get('errcode') == 0:
+              print("✅ 推送成功！")
+          else:
+              print(f"❌ 推送失败：{response.json()}")
+      send_message()
+      EOF
+
+      - name: 执行推送
+        run: python push_meme.py

@@ -1,0 +1,59 @@
+name: 热梗推送
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 北京时间09:00
+    - cron: '0 7 * * *'  # 北京时间15:00
+    - cron: '0 10 * * *' # 北京时间18:00
+    - cron: '59 15 * * *' # 北京时间23:59
+
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - run: pip install requests
+
+      - name: 创建推送脚本
+        run: |
+          cat > push.py << 'EOF'
+      import requests
+      from datetime import datetime
+
+      webhook = "${{ secrets.WEBHOOK_URL }}"
+
+      msg = f"""## 📅 {datetime.now().strftime('%Y年%m月%d日 %H:%M')} 全网热梗推送
+
+### 🔥 今日热梗
+
+**1. 热梗示例1**
+💬 哈哈哈哈太搞笑了
+🔗 [查看](https://example.com/1)
+
+---
+
+**2. 热梗示例2**  
+💬 笑死我了
+🔗 [查看](https://example.com/2)
+
+---
+
+**3. 热梗示例3**
+💬 太真实了
+🔗 [查看](https://example.com/3)
+
+✨ GitHub Actions自动推送
+      """
+
+      r = requests.post(webhook, json={"msgtype":"markdown","markdown":{"content":msg}})
+      print(f"推送结果: {r.json()}")
+      EOF
+
+      - name: 执行推送
+        run: python push.py
